@@ -154,6 +154,27 @@ let intervaloTimer = null;
             painel.style('backdrop-filter', 'blur(6px)');
 
             atualizarInterface();
+            // Criar botão para ocultar/mostrar painel
+  let botaoTogglePainel = createButton('👁️ Ocultar painel');
+  botaoTogglePainel.id('togglePainel');
+  botaoTogglePainel.position(windowWidth - 160, 10);
+  botaoTogglePainel.style('position', 'fixed');
+  botaoTogglePainel.style('z-index', '1001');
+  botaoTogglePainel.style('background', '#444');
+  botaoTogglePainel.style('color', '#fff');
+  botaoTogglePainel.style('padding', '6px 10px');
+  botaoTogglePainel.style('border', '2px solid #4CAF50');
+  botaoTogglePainel.style('border-radius', '8px');
+  botaoTogglePainel.style('cursor', 'pointer');
+  botaoTogglePainel.style('font-size', '12px');
+  botaoTogglePainel.mousePressed(() => {
+    const painelEl = select('#painel');
+    if (painelEl) {
+      const visivel = painelEl.style('display') !== 'none';
+      painelEl.style('display', visivel ? 'none' : 'flex');
+      botaoTogglePainel.html(visivel ? '👁️ Mostrar painel' : '👁️ Ocultar painel');
+    }
+  });
         }
 
         function atualizarInterface() {
@@ -243,19 +264,18 @@ let intervaloTimer = null;
             const porcosValidos = new Set();
 
             // Etapa 1: verificar porcos diretamente sobre vigas
-porcos.forEach((porco, i) => {
-  for (let viga of vigas) {
-    const dx = Math.abs(porco.position.x - viga.position.x);
-    const dy = porco.position.y - viga.position.y;
-    const velocidade = Math.sqrt(porco.velocity.x ** 2 + porco.velocity.y ** 2);
+            porcos.forEach((porco, i) => {
+                for (let viga of vigas) {
+                    const dx = Math.abs(porco.position.x - viga.position.x);
+                    const dy = porco.position.y - viga.position.y;
+                    const velocidade = Math.sqrt(porco.velocity.x ** 2 + porco.velocity.y ** 2);
 
-    if (dx < 45 && dy > -20 && dy < 15 && velocidade < 2) {
-      porcosValidos.add(i);
-      break;
-    }
-  }
-});
-            
+                    if (dx < 190 && dy > -70 && dy < 60 && velocidade < 3) {
+                        porcosValidos.add(i);
+                        break;
+                    }
+                }
+            });
 
             function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
@@ -292,30 +312,71 @@ porcos.forEach((porco, i) => {
 }
 
             // Etapa 2: verificar porcos que estão em cima de outros porcos válidos
-            let mudou;
-            do {
-                mudou = false;
+    let mudou;
+    do {
+        mudou = false;
 
-                porcos.forEach((porco, i) => {
-                    if (porcosValidos.has(i)) return;
+        porcos.forEach((porco, i) => {
+            // Verificar se o porco ainda existe
+            if (!porco || porco.position.y > height - 250) return;
+            if (porcosValidos.has(i)) return;
 
-                    for (let j of porcosValidos) {
-                        const porcoBase = porcos[j];
-                        const dx = Math.abs(porco.position.x - porcoBase.position.x);
-                        const dy = porco.position.y - porcoBase.position.y;
-                        const velocidade = Math.sqrt(porco.velocity.x ** 2 + porco.velocity.y ** 2);
+            for (let j of porcosValidos) {
+                const porcoBase = porcos[j];
+                // Verificar se o porco base ainda existe
+                if (!porcoBase || porcoBase.position.y > height - 250) continue;
+                
+                const dx = Math.abs(porco.position.x - porcoBase.position.x);
+                const dy = porco.position.y - porcoBase.position.y;
+                const velocidade = Math.sqrt(porco.velocity.x ** 2 + porco.velocity.y ** 2);
 
-                        if (dx < 40 && dy > -50 && dy < 45 && velocidade < 2) {
-                            porcosValidos.add(i);
-                            mudou = true;
-                            break;
-                        }
-                    }
-                });
-            } while (mudou);
+                // Tolerância para porcos empilhados (baseada no tamanho do porco)
+                if (dx < 60 && dy > -80 && dy < 20 && velocidade < 3) {
+                    porcosValidos.add(i);
+                    mudou = true;
+                    break;
+                }
+            }
+        });
+    } while (mudou);
 
             contador.html(`🐷 Porcos soltos sobre vigas (ou empilhados): ${porcosValidos.size}`);
         }
+            
+
+            function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+
+  if (painel) {
+    painel.style('left', '50%');
+    painel.style('top', '10px');
+    painel.style('transform', 'translateX(-50%)');
+    painel.style('z-index', '1000');
+    painel.style('font-family', 'Arial, sans-serif');
+
+    if (windowWidth <= 400) {
+      // Super compacto para celulares pequenos
+      painel.style('max-width', '95%');
+      painel.style('font-size', '11px');
+      painel.style('padding', '6px 10px');
+      painel.style('border-radius', '6px');
+    } else if (windowWidth <= 600) {
+      // Compacto para telas pequenas
+      painel.style('max-width', '90%');
+      painel.style('font-size', '12px');
+      painel.style('padding', '8px 12px');
+      painel.style('border-radius', '8px');
+    } else {
+      // Padrão
+      painel.style('max-width', '600px');
+      painel.style('font-size', '13px');
+      painel.style('padding', '10px 16px');
+      painel.style('border-radius', '10px');
+    }
+
+    painel.style('box-shadow', '0 4px 12px rgba(0,0,0,0.7)');
+  }
+}
 
         function verificarPesoNasVigas() {
             const suportePorViga = 1.5; // cada viga sozinha suporta até 1.5 porcos
